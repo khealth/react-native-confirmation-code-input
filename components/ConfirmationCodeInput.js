@@ -221,9 +221,9 @@ export default class ConfirmationCodeInput extends Component {
     let newCodeArr = _.clone(this.state.codeArr);
     newCodeArr[index] = character;
 
-    if (index == codeLength - 1) {
-      const code = newCodeArr.join("");
+    const code = newCodeArr.join("");
 
+    if (index == codeLength - 1) {
       if (compareWithCode) {
         const isMatching = this._isMatchingCode(
           code,
