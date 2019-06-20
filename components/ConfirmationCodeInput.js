@@ -249,7 +249,7 @@ export default class ConfirmationCodeInput extends Component {
       },
       () => {
         if (this.props.onChangeText) {
-          this.props.onChangeText();
+          this.props.onChangeText(code);
         }
       }
     );
