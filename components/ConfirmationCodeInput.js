@@ -92,14 +92,18 @@ export default class ConfirmationCodeInput extends Component {
   }
 
   _onFocus(index) {
-    let newCodeArr = _.clone(this.state.codeArr);
+    const newCodeArr = _.clone(this.state.codeArr);
     const currentEmptyIndex = _.findIndex(newCodeArr, c => !c);
+    const { codeLength } = this.props;
     if (currentEmptyIndex !== -1 && currentEmptyIndex < index) {
       return this._setFocus(currentEmptyIndex);
     }
-    for (const i in newCodeArr) {
-      if (i >= index) {
-        newCodeArr[i] = "";
+
+    if (newCodeArr.length !== codeLength) {
+      for (const i in newCodeArr) {
+        if (i >= index) {
+          newCodeArr[i] = "";
+        }
       }
     }
 
@@ -167,7 +171,7 @@ export default class ConfirmationCodeInput extends Component {
 
   _getClassStyle(className, active) {
     const { cellBorderWidth, activeColor, inactiveColor, space } = this.props;
-    let classStyle = {
+    const classStyle = {
       ...this._getInputSpaceStyle(space),
       color: activeColor
     };
@@ -216,12 +220,50 @@ export default class ConfirmationCodeInput extends Component {
     }
   }
 
+  _handleOneTimeCode = code => {
+    const { codeLength, onChangeText, onFulfill } = this.props;
+    const codeArr = code.split("");
+
+    this.setState(
+      {
+        codeArr,
+        currentIndex: codeLength - 1
+      },
+      () => {
+        this._setFocus(codeLength - 1);
+        if (onFulfill) {
+          onFulfill(code);
+        }
+      }
+    );
+  };
+
   _onInputCode(character, index) {
     const { codeLength, onFulfill, compareWithCode, ignoreCase } = this.props;
-    let newCodeArr = _.clone(this.state.codeArr);
+    const newCodeArr = _.clone(this.state.codeArr);
     newCodeArr[index] = character;
-
     const code = newCodeArr.join("");
+
+    if (!character || character.length != 1) {
+      isOneTimeCode = character.length === codeLength;
+      if (!isOneTimeCode) {
+        newCodeArr[index] = character.split("")[character.length - 1];
+        this.setState(
+          {
+            codeArr: newCodeArr.splice(0, index + 1),
+            currentIndex: character.length
+          },
+          () => {
+            const focusIndex = index + 1 >= codeLength ? index : index + 1;
+            this._setFocus(focusIndex);
+          }
+        );
+        return;
+      } else {
+        this._handleOneTimeCode(character);
+        return;
+      }
+    }
 
     if (index == codeLength - 1) {
       if (compareWithCode) {
@@ -241,12 +283,10 @@ export default class ConfirmationCodeInput extends Component {
     }
 
     this.setState(
-      prevState => {
-        return {
-          codeArr: newCodeArr,
-          currentIndex: prevState.currentIndex + 1
-        };
-      },
+      prevState => ({
+        codeArr: newCodeArr,
+        currentIndex: prevState.currentIndex + 1
+      }),
       () => {
         if (this.props.onChangeText) {
           this.props.onChangeText(code);
@@ -272,7 +312,7 @@ export default class ConfirmationCodeInput extends Component {
       height: size
     };
 
-    let codeInputs = [];
+    const codeInputs = [];
     for (let i = 0; i < codeLength; i++) {
       const id = i;
       codeInputs.push(
@@ -288,7 +328,7 @@ export default class ConfirmationCodeInput extends Component {
           underlineColorAndroid="transparent"
           selectionColor={activeColor}
           keyboardType={this.props.keyboardType}
-          returnKeyType={"done"}
+          returnKeyType="done"
           {...this.props}
           autoFocus={autoFocus && id == 0}
           onFocus={() => this._onFocus(id)}
@@ -297,7 +337,7 @@ export default class ConfirmationCodeInput extends Component {
           }
           onChangeText={text => this._onInputCode(text, id)}
           onKeyPress={e => this._onKeyPress(e)}
-          maxLength={1}
+          maxLength={codeLength}
         />
       );
     }
